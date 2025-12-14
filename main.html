@@ -242,22 +242,22 @@
                                 <div class="order-form-row">
                                     <div class="order-form-group">
                                         <label for="profile-first-name">Имя</label>
-                                        <input type="text" id="profile-first-name" class="profile-field-readonly" placeholder="Иван" value="Иван" readonly>
+                                        <input type="text" id="profile-first-name" class="profile-field-readonly" placeholder="Иван" readonly>
                                     </div>
                                     <div class="order-form-group">
                                         <label for="profile-last-name">Фамилия</label>
-                                        <input type="text" id="profile-last-name" class="profile-field-readonly" placeholder="Иванов" value="Иванов" readonly>
+                                        <input type="text" id="profile-last-name" class="profile-field-readonly" placeholder="Иванов" readonly>
                                     </div>
                                 </div>
 
                                 <div class="order-form-row">
                                     <div class="order-form-group">
                                         <label for="profile-email">Email</label>
-                                        <input type="email" id="profile-email" class="profile-field-readonly" placeholder="your@email.com" value="ivan@example.com" readonly>
+                                        <input type="email" id="profile-email" class="profile-field-readonly" placeholder="your@email.com" readonly>
                                     </div>
                                     <div class="order-form-group">
                                         <label for="profile-phone">Телефон</label>
-                                        <input type="tel" id="profile-phone" class="profile-field-readonly" placeholder="+7 (912) 156-43-89" value="+7 (912) 156-43-89" readonly>
+                                        <input type="tel" id="profile-phone" class="profile-field-readonly" placeholder="+7 (912) 156-43-89" readonly>
                                     </div>
                                 </div>
 
@@ -449,55 +449,6 @@
                     </div>
                 </div>
 
-                <!-- Вкладка "Статистика" для водителей -->
-                <div id="profile-driver-stats" class="profile-tab" style="display: none;">
-                    <div class="profile-section">
-                        <h2>Моя статистика</h2>
-
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-number" id="driver-total-deliveries">0</div>
-                                <div class="stat-label">Всего доставок</div>
-                            </div>
-
-                            <div class="stat-card">
-                                <div class="stat-number" id="driver-earnings">0</div>
-                                <div class="stat-label">Заработок (₽)</div>
-                            </div>
-
-                            <div class="stat-card">
-                                <div class="stat-number" id="driver-avg-delivery-time">0</div>
-                                <div class="stat-label">Ср. время доставки (ч)</div>
-                            </div>
-                        </div>
-
-                        <div class="profile-section">
-                            <h3>Данные автомобиля</h3>
-                            <div class="order-form-row">
-                                <div class="order-form-group">
-                                    <label>Модель:</label>
-                                    <input type="text" id="driver-car-model" class="profile-field-readonly" readonly>
-                                </div>
-                                <div class="order-form-group">
-                                    <label>Госномер:</label>
-                                    <input type="text" id="driver-car-number" class="profile-field-readonly" readonly>
-                                </div>
-                            </div>
-
-                            <div class="order-form-row">
-                                <div class="order-form-group">
-                                    <label>Макс. грузоподъемность:</label>
-                                    <input type="text" id="driver-max-weight" class="profile-field-readonly" readonly>
-                                </div>
-                                <div class="order-form-group">
-                                    <label>Статус:</label>
-                                    <input type="text" id="driver-status" class="profile-field-readonly" readonly>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Вкладка "Управление заказами" для администратора -->
                 <div id="profile-admin-orders" class="profile-tab" style="display: none;">
                     <div class="profile-section">
@@ -559,81 +510,6 @@
                                 <div class="table-header-item">ДЕЙСТВИЯ</div>
                             </div>
                             <div id="drivers-list-body"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Вкладка "История увольнений" для администратора -->
-                <div id="profile-resignation-history" class="profile-tab" style="display: none;">
-                    <div class="profile-section">
-                        <h2>История увольнений водителей</h2>
-                        <div id="dismissal-history-list" class="orders-table-container" style="display: block;">
-                            <div class="table-header">
-                                <div class="table-header-item">ВОДИТЕЛЬ</div>
-                                <div class="table-header-item">ТИП</div>
-                                <div class="table-header-item">ПРИЧИНА</div>
-                                <div class="table-header-item">ЗАКАЗОВ ЗАДЕТО</div>
-                                <div class="table-header-item">ДАТА</div>
-                                <div class="table-header-item">ДЕЙСТВИЯ</div>
-                            </div>
-                            <div id="dismissal-history-body"></div>
-                        </div>
-
-                        <div id="no-dismissal-history" class="no-orders-container" style="display: none;">
-                            <div class="no-orders-icon">📋</div>
-                            <h3>История увольнений пуста</h3>
-                            <p>Увольнений водителей еще не было</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Вкладка "Статистика" для администратора -->
-                <div id="profile-admin-stats" class="profile-tab" style="display: none;">
-                    <div class="profile-section">
-                        <h2>Статистика компании</h2>
-
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-number" id="admin-total-orders">0</div>
-                                <div class="stat-label">Всего заказов</div>
-                            </div>
-
-                            <div class="stat-card">
-                                <div class="stat-number" id="admin-today-orders">0</div>
-                                <div class="stat-label">Заказов сегодня</div>
-                            </div>
-
-                            <div class="stat-card">
-                                <div class="stat-number" id="admin-active-drivers">0</div>
-                                <div class="stat-label">Активных водителей</div>
-                            </div>
-
-                            <div class="stat-card">
-                                <div class="stat-number" id="admin-total-revenue">0</div>
-                                <div class="stat-label">Выручка (₽)</div>
-                            </div>
-                        </div>
-
-                        <div class="profile-section">
-                            <h3>Статистика по статусам заказов</h3>
-                            <div class="order-form-row">
-                                <div class="order-form-group">
-                                    <label>Новых:</label>
-                                    <input type="text" id="stats-new-orders" class="profile-field-readonly" readonly>
-                                </div>
-                                <div class="order-form-group">
-                                    <label>Подтвержденных:</label>
-                                    <input type="text" id="stats-confirmed-orders" class="profile-field-readonly" readonly>
-                                </div>
-                                <div class="order-form-group">
-                                    <label>В пути:</label>
-                                    <input type="text" id="stats-transit-orders" class="profile-field-readonly" readonly>
-                                </div>
-                                <div class="order-form-group">
-                                    <label>Доставленных:</label>
-                                    <input type="text" id="stats-delivered-orders" class="profile-field-readonly" readonly>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -920,7 +796,7 @@
 
             <div class="auth-form-container">
                 <div class="sms-code-info">
-                    На ваш телефон было отправлено<br>CМС-сообщение с кодом подтверждения.
+                    На ваш телефон был отправлен<br>код для подтверждения.
                 </div>
 
                 <div class="auth-input-group">
@@ -989,7 +865,7 @@
 
             <div class="auth-form-container">
                 <div class="sms-code-info">
-                    На ваш телефон было отправлено<br>CМС-сообщение с кодом подтверждения.
+                    На ваш телефон был отправлен<br>код для подтверждения.
                 </div>
 
                 <div class="auth-input-group">

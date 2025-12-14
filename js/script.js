@@ -55,7 +55,6 @@ CLIENT: {
     IN_TRANSIT: 'in_transit',       // В пути
     DELIVERED: 'delivered',         // Завершен
     REJECTED: 'rejected',           // Отклонен
-    CANCELLED: 'cancelled'          // Отменен
 },
 // Статусы для администратора
 ADMIN: {
@@ -64,11 +63,10 @@ ADMIN: {
     IN_TRANSIT: 'in_transit',       // В пути
     DELIVERED: 'delivered',         // Завершен
     REJECTED: 'rejected',           // Отклонен
-    CANCELLED_BY_CLIENT: 'cancelled_by_client' // Отменен клиентом
 }
 };
 
-// Нормализация заказов из API (snake_case -> camelCase)
+// Нормализация заказов из API
 function normalizeOrder(o) {
     return {
         id: Number(o.id),
@@ -157,7 +155,6 @@ if (isAdmin) {
         case ORDER_STATUSES.ADMIN.IN_TRANSIT: return 'В пути';
         case ORDER_STATUSES.ADMIN.DELIVERED: return 'Завершен';
         case ORDER_STATUSES.ADMIN.REJECTED: return 'Отклонен';
-        case ORDER_STATUSES.ADMIN.CANCELLED_BY_CLIENT: return 'Отменен клиентом';
         default: return status;
     }
 } else {
@@ -177,9 +174,6 @@ if (isAdmin) {
         case ORDER_STATUSES.CLIENT.REJECTED:
         case ORDER_STATUSES.ADMIN.REJECTED:
             return 'Отклонен';
-        case ORDER_STATUSES.CLIENT.CANCELLED:
-        case ORDER_STATUSES.ADMIN.CANCELLED_BY_CLIENT:
-            return 'Отменен';
         default: return status;
     }
 }
@@ -203,9 +197,6 @@ switch(status) {
     case ORDER_STATUSES.CLIENT.REJECTED:
     case ORDER_STATUSES.ADMIN.REJECTED:
         return 'rejected';
-    case ORDER_STATUSES.CLIENT.CANCELLED:
-    case ORDER_STATUSES.ADMIN.CANCELLED_BY_CLIENT:
-        return 'cancelled';
     default:
         return 'new';
 }
@@ -217,17 +208,9 @@ function convertStatusForRole(status, targetRole) {
 if (status === ORDER_STATUSES.ADMIN.NEW && targetRole === 'client') {
     return ORDER_STATUSES.CLIENT.PROCESSING;
 }
-// Преобразование статуса "Отменен клиентом" администратора в "Отменен" для клиента
-else if (status === ORDER_STATUSES.ADMIN.CANCELLED_BY_CLIENT && targetRole === 'client') {
-    return ORDER_STATUSES.CLIENT.CANCELLED;
-}
 // Преобразование статуса "В обработке" клиента в "Новый" для администратора
 else if (status === ORDER_STATUSES.CLIENT.PROCESSING && targetRole === 'admin') {
     return ORDER_STATUSES.ADMIN.NEW;
-}
-// Преобразование статуса "Отменен" клиента в "Отменен клиентом" для администратора
-else if (status === ORDER_STATUSES.CLIENT.CANCELLED && targetRole === 'admin') {
-    return ORDER_STATUSES.ADMIN.CANCELLED_BY_CLIENT;
 }
 // Для остальных статусов преобразование 1:1
 else if (status.includes('confirmed') || status.includes('in_transit') ||
@@ -255,7 +238,7 @@ const categories = {
 return categories[categoryCode] || categoryCode;
 }
 
-// Функция для преобразования типа кузова
+// Функции для преобразования типа кузова и груза
 function getCarTypeName(carType) {
 const carTypes = {
     'tent': 'Тент',
@@ -509,7 +492,7 @@ ordersList.forEach((order, index) => {
 });
 }
 
-// Обработчик формы профиля
+// Обработчик смены пароля в профиля
 async function handleProfileSubmit(event) {
 event.preventDefault();
 
@@ -642,6 +625,7 @@ if (currentUser && (currentUser.isAdmin || currentUser.isDriver)) {
 }
 }
 
+// Функция выхода из системы
 async function logout() {
 try {
     await fetch(`${API_BASE_URL}/logout`, {
@@ -755,6 +739,7 @@ registerTimerInterval = setInterval(() => {
 }, 1000);
 }
 
+// Функция сброса таймера в регистрации
 function resetRegisterTimer() {
 clearInterval(registerTimerInterval);
 document.getElementById('reg-sms-timer').textContent = 'Пожалуйста подождите... 59 сек';
@@ -830,6 +815,7 @@ if (fullCode === "1234") {
 }
 }
 
+// Функция сохранения нового пароля для аккаунта
 async function confirmNewPassword() {
     const pass1 = document.getElementById('reset-new-pass')?.value || '';
     const pass2 = document.getElementById('reset-new-pass-confirm')?.value || '';
@@ -874,7 +860,7 @@ async function confirmNewPassword() {
     }
 }
 
-// Функции для работы с модальными окнами восстановления пароля
+// Функции для работы с модальными окнами сброса пароля
 function openForgotPasswordModal() {
 closeLoginModal();
 document.getElementById('forgotPasswordModal').classList.add('active');
@@ -904,7 +890,7 @@ closeConfirmCodeModal();
 openForgotPasswordModal();
 }
 
-// Функция для отправки кода восстановления
+// Функция для отправки кода для сброса пароля
 function sendRecoveryCode() {
 const contact = document.getElementById('recovery-contact').value;
 
@@ -958,6 +944,7 @@ timerInterval = setInterval(() => {
 }, 1000);
 }
 
+// Функция сброса таймера в sms-код для сброса пароля
 function resetTimer() {
 clearInterval(timerInterval);
 document.getElementById('sms-timer').textContent = 'Пожалуйста подождите... 59 сек';
@@ -972,7 +959,7 @@ if (resendCodeElement.classList.contains('disabled')) {
     return;
 }
 
-showNotification('Код восстановления: 1234', 'info');
+showNotification('Код для сброса пароля: 1234', 'info');
 startTimer();
 }
 
@@ -1040,18 +1027,6 @@ if (input && errorElement) {
 }
 }
 
-function clearError(inputId) {
-const input = document.getElementById(inputId);
-const errorElement = document.getElementById(inputId + '-error');
-
-if (input && errorElement) {
-    input.classList.remove('error');
-    errorElement.textContent = '';
-    errorElement.classList.remove('show');
-    errorElement.style.display = 'none';
-}
-}
-
 function clearAllErrors() {
 const errorMessages = document.querySelectorAll('.error-message');
 const inputs = document.querySelectorAll('.auth-input');
@@ -1080,18 +1055,6 @@ if (input && errorElement) {
 }
 }
 
-function clearOrderError(inputId) {
-const input = document.getElementById(inputId);
-const errorElement = document.getElementById(inputId + '-error');
-
-if (input && errorElement) {
-    input.classList.remove('error');
-    errorElement.textContent = '';
-    errorElement.classList.remove('show');
-    errorElement.style.display = 'none';
-}
-}
-
 function clearAllOrderErrors() {
 const errorMessages = document.querySelectorAll('.order-error-message');
 const inputs = document.querySelectorAll('#orderForm input, #orderForm textarea, #orderForm select');
@@ -1107,7 +1070,7 @@ inputs.forEach(input => {
 });
 }
 
-// Обработчики форм
+// Функция c проверкой валидации в авторизации
 async function handleLogin() {
 const login = document.getElementById('auth-login').value;
 const password = document.getElementById('auth-password').value;
@@ -1165,6 +1128,7 @@ try {
     }
 }
 
+// Функция c проверкой валидации в регистрации
 async function handleRegister() {
 const firstName = document.getElementById('reg-firstName').value;
 const lastName = document.getElementById('reg-lastName').value;
@@ -1226,7 +1190,7 @@ if (hasError) {
     return;
 }
 
-// Этап 1: запрашиваем SMS-код (демо 1234), показываем модал ввода кода
+// Запрос кода (демо 1234)
 tempRegistrationData = { firstName, lastName, email, phone, password };
 showNotification('Код для регистрации: 1234', 'info');
 openConfirmRegisterCodeModal();
@@ -1261,7 +1225,7 @@ function calculateOrderPrice(orderData, distance) {
 const BASE_PRICE = 1000; // Базовая стоимость заказа
 const PRICE_PER_KM = 45; // Стоимость за километр
 const PRICE_PER_KG = 80; // Стоимость за килограмм
-const PRICE_PER_M3 = 400; // Стоимость за кубический метр
+const PRICE_PER_M3 = 100; // Стоимость за кубический метр
 
 // Коэффициенты для типов груза
 const cargoTypeMultiplier = {
@@ -1301,7 +1265,7 @@ const totalPrice = Math.round(deliveryCost + additionalCost);
 return totalPrice;
 }
 
-// функция c проверкой валидации в "Заказать перевозку"
+// Функция c проверкой валидации в "Заказать перевозку"
 async function handleOrderSubmit(event) {
 event.preventDefault();
 
@@ -1401,7 +1365,7 @@ try {
         shippingDate,
         pickupAddress,
         deliveryAddress,
-            distance,
+        distance,
         insurance,
         packaging
         })
@@ -1448,7 +1412,7 @@ try {
 return false;
 }
 
-// Функции для страницы "Мои заказы" в профиле
+// Функция видимости заказов в "Мои заказы"
 function toggleOrdersVisibility(hasOrders) {
 const ordersTable = document.getElementById('profile-orders-table');
 const noOrdersMessage = document.getElementById('profile-no-orders-message');
@@ -1462,159 +1426,7 @@ if (hasOrders) {
 }
 }
 
-function viewOrder(orderId) {
-const order = orders.find(o => o.id === orderId);
-if (!order) return;
-
-const user = users.find(u => u.id === order.userId);
-const driver = order.driverId ? drivers.find(d => d.userId === order.driverId) : null;
-const driverUser = driver ? users.find(u => u.id === driver.userId) : null;
-
-let modalHTML = `
-    <div class="modal active" id="orderDetailsModal">
-        <div class="auth-container order-details-modal">
-            <div class="auth-header">
-                <button class="close-auth-btn" onclick="closeModal('orderDetailsModal')">×</button>
-                <div class="auth-logo">Заказ #${orderId}</div>
-            </div>
-
-            <div class="auth-form-container">
-                <div class="order-detail-item">
-                    <div class="order-detail-label">Статус</div>
-                    <div class="order-detail-value">
-                        <span class="status-badge status-${order.status}">${getStatusText(order.status)}</span>
-                    </div>
-                </div>
-
-                <div class="order-form-row">
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Клиент</div>
-                        <div class="order-detail-value">${user ? `${user.firstName} ${user.lastName}` : 'Неизвестно'}</div>
-                    </div>
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Телефон</div>
-                        <div class="order-detail-value">${order.senderPhone}</div>
-                    </div>
-                </div>
-
-                <div class="order-detail-item">
-                    <div class="order-detail-label">Маршрут</div>
-                    <div class="order-detail-value">
-                        <div><strong>Откуда:</strong> ${order.pickupAddress}</div>
-                        <div><strong>Куда:</strong> ${order.deliveryAddress}</div>
-                        <div><strong>Расстояние:</strong> ${order.distance} км</div>
-                    </div>
-                </div>
-
-                <div class="order-detail-item">
-                    <div class="order-detail-label">Груз</div>
-                    <div class="order-detail-value">
-                        <div><strong>Описание:</strong> ${order.cargoDescription}</div>
-                        <div><strong>Категория:</strong> ${getCategoryName(order.productCategory)}</div>
-                        <div><strong>Тип:</strong> ${order.cargoType === 'general' ? 'Общий' : order.cargoType === 'fragile' ? 'Хрупкий' : order.cargoType === 'dangerous' ? 'Опасный' : 'Скоропортящийся'}</div>
-                        <div><strong>Вес/Объем:</strong> ${order.cargoWeight} кг / ${order.cargoVolume} м³</div>
-                    </div>
-                </div>
-
-                <div class="order-detail-item">
-                    <div class="order-detail-label">Стоимость</div>
-                    <div class="order-detail-value">
-                        <div><strong>Общая:</strong> ${order.price} ₽</div>
-                        ${order.cancellationFee ? `<div><strong>Штраф за отмену:</strong> ${order.cancellationFee} ₽</div>` : ''}
-                        ${order.refundAmount ? `<div><strong>К возврату:</strong> ${order.refundAmount} ₽</div>` : ''}
-                    </div>
-                </div>
-
-                ${driver ? `
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Водитель</div>
-                        <div class="order-detail-value">
-                            <div><strong>Имя Фамилия:</strong> ${driverUser ? `${driverUser.firstName} ${driverUser.lastName}` : 'Неизвестно'}</div>
-                            <div><strong>Автомобиль:</strong> ${driver.carModel} (${driver.carNumber})</div>
-                            <div><strong>Телефон:</strong> ${driverUser ? driverUser.phone : 'Неизвестно'}</div>
-                        </div>
-                    </div>
-                ` : ''}
-
-                ${order.comments ? `
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Комментарий клиента</div>
-                        <div class="order-detail-value">${order.comments}</div>
-                    </div>
-                ` : ''}
-
-                ${order.adminComment ? `
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Комментарий администратора</div>
-                        <div class="order-detail-value">${order.adminComment}</div>
-                    </div>
-                ` : ''}
-
-                <div class="forgot-password-buttons">
-                    ${currentUser.isAdmin && order.status === 'new' ? `
-                        <button class="recovery-btn" onclick="openOrderModal(${orderId}); closeModal('orderDetailsModal')">Обработать заказ</button>
-                    ` : ''}
-
-                    ${currentUser.isAdmin && order.status === 'confirmed' && !order.driverId ? `
-                        <button class="recovery-btn" onclick="assignDriverModal(${orderId}); closeModal('orderDetailsModal')">Назначить водителя</button>
-                    ` : ''}
-
-                    ${order.userId === currentUser.id && order.clientStatus !== 'cancelled' && order.clientStatus !== 'delivered' && order.clientStatus !== 'rejected' ? `
-                        <button class="back-btn" onclick="openCancelOrderModal(${orderId})">Отменить заказ</button>
-                    ` : ''}
-
-                    <button class="back-btn" onclick="closeModal('orderDetailsModal')">Закрыть</button>
-                </div>
-            </div>
-        </div>
-    </div>
-`;
-
-document.body.insertAdjacentHTML('beforeend', modalHTML);
-}
-
-// Закрытие модальных окон при клике вне их
-document.addEventListener('click', function(event) {
-const modals = ['loginModal', 'registerModal', 'forgotPasswordModal', 'confirmCodeModal', 'confirmRegisterCodeModal'];
-
-modals.forEach(modalId => {
-    const modal = document.getElementById(modalId);
-    if (event.target === modal) {
-        if (modalId === 'loginModal') closeLoginModal();
-        if (modalId === 'registerModal') closeRegisterModal();
-        if (modalId === 'forgotPasswordModal') closeForgotPasswordModal();
-        if (modalId === 'confirmCodeModal') closeConfirmCodeModal();
-        if (modalId === 'confirmRegisterCodeModal') closeConfirmRegisterCodeModal();
-    }
-});
-});
-
 //  Функции для водителей
-
-// Принять заказ водителем
-async function acceptOrder(orderId) {
-
-try {
-    const response = await fetch(`${API_BASE_URL}/driver/orders/${orderId}/accept`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
-    });
-
-    const data = await response.json();
-    if (data.success) {
-showNotification('Заказ успешно принят!', 'success');
-        await loadOrders();
-loadDriverActiveOrders();
-updateDriverStats();
-    } else {
-        showNotification(data.message || 'Ошибка принятия заказа', 'error');
-    }
-} catch (error) {
-    console.error('Ошибка принятия заказа:', error);
-    showNotification('Ошибка соединения с сервером', 'error');
-}
-}
 
 // Загрузка активных заказов водителя
 async function loadDriverActiveOrders() {
@@ -1656,7 +1468,7 @@ if (noOrders) noOrders.style.display = 'none';
 if (container) container.innerHTML = html;
 }
 
-// Отметить груз как принятый (статус В пути)
+// Отметить груз как принятый (В пути)
 async function markAsInTransit(orderId) {
 try {
     const response = await fetch(`${API_BASE_URL}/orders/${orderId}/status`, {
@@ -1700,10 +1512,9 @@ try {
     if (data.success) {
 showNotification('Заказ отмечен как доставленный', 'success');
         await loadOrders();
-        await loadDriversList(); // Перезагружаем список водителей для обновления статистики
+        await loadDriversList(); // Перезагружаем список водителей 
 loadDriverActiveOrders();
 loadDriverHistory();
-updateDriverStats();
     } else {
         showNotification(data.message || 'Ошибка обновления статуса', 'error');
     }
@@ -1748,293 +1559,19 @@ if (noHistory) noHistory.style.display = 'none';
 if (container) container.innerHTML = html;
 }
 
-// Обновление статистики водителя
-async function updateDriverStats() {
-if (!currentUser || !currentUser.isDriver) return;
-
-try {
-    // Загружаем данные водителя
-    const response = await fetch(`${API_BASE_URL}/driver/info`, { credentials: 'include' });
-    const data = await response.json();
-
-    let driver = null;
-    if (data.success && data.driver) {
-        driver = normalizeDriver(data.driver);
-        // Обновляем локальный кэш
-        const idx = drivers.findIndex(d => d.userId === currentUser.id);
-        if (idx >= 0) {
-            drivers[idx] = driver;
-        } else {
-            drivers.push(driver);
-        }
-    } else {
-        // Если не нашли, ищем в кэше
-        driver = drivers.find(d => d.userId === currentUser.id);
-    }
-
-if (!driver) return;
-
-    // Заполняем данные статистики
-    const totalDeliveriesEl = document.getElementById('driver-total-deliveries');
-    const earningsEl = document.getElementById('driver-earnings');
-    const avgTimeEl = document.getElementById('driver-avg-delivery-time');
-
-    if (totalDeliveriesEl) totalDeliveriesEl.textContent = driver.completedDeliveries || 0;
-    if (earningsEl) earningsEl.textContent = calculateDriverEarnings();
-    if (avgTimeEl) avgTimeEl.textContent = '24';
-
-// Данные автомобиля
-    const carModelEl = document.getElementById('driver-car-model');
-    const carNumberEl = document.getElementById('driver-car-number');
-    const maxWeightEl = document.getElementById('driver-max-weight');
-    const statusEl = document.getElementById('driver-status');
-
-    if (carModelEl) carModelEl.value = driver.carModel || '';
-    if (carNumberEl) carNumberEl.value = driver.carNumber || '';
-    if (maxWeightEl) maxWeightEl.value = `${driver.maxWeight || 0} кг`;
-    if (statusEl) statusEl.value = driver.workStatus === 'active' ? 'Активен' : 'Неактивен';
-} catch (error) {
-    console.error('Ошибка загрузки данных водителя:', error);
-    // Пытаемся использовать кэш
-    const driver = drivers.find(d => d.userId === currentUser.id);
-    if (driver) {
-        const totalDeliveriesEl = document.getElementById('driver-total-deliveries');
-        const earningsEl = document.getElementById('driver-earnings');
-        if (totalDeliveriesEl) totalDeliveriesEl.textContent = driver.completedDeliveries || 0;
-        if (earningsEl) earningsEl.textContent = calculateDriverEarnings();
-    }
-}
-
-// Добавляем переключатель статуса работы
-if (currentUser.isDriver) {
-    const driver = drivers.find(d => d.userId === currentUser.id);
-    if (driver) {
-        const statusSection = document.querySelector('#profile-driver-stats .profile-section:last-child');
-
-        // Создаем или обновляем переключатель
-        let statusToggle = statusSection.querySelector('#work-status-toggle');
-        if (!statusToggle) {
-            statusToggle = document.createElement('div');
-            statusToggle.id = 'work-status-toggle';
-            statusToggle.style.marginTop = '20px';
-            statusToggle.innerHTML = `
-                <h3>Статус работы</h3>
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <button id="toggle-work-status" class="order-submit-btn"
-                            style="background: ${driver.workStatus === 'active' ? '#28a745' : '#6c757d'};">
-                        ${driver.workStatus === 'active' ? 'Активен' : 'Неактивен'}
-                    </button>
-                    <span style="color: #666; font-size: 14px;">
-                        ${driver.workStatus === 'active'
-                            ? 'Вы видите все доступные заказы и можете их принимать'
-                            : 'Вы не видите новые заказы и не можете их принимать'}
-                    </span>
-                </div>
-            `;
-            statusSection.appendChild(statusToggle);
-
-            // Назначаем обработчик
-            document.getElementById('toggle-work-status').onclick = toggleWorkStatus;
-        } else {
-            const btn = statusToggle.querySelector('#toggle-work-status');
-            btn.style.background = driver.workStatus === 'active' ? '#28a745' : '#6c757d';
-            btn.textContent = driver.workStatus === 'active' ? 'Активен' : 'Неактивен';
-            const span = statusToggle.querySelector('span');
-            span.textContent = driver.workStatus === 'active'
-                ? 'Вы видите все доступные заказы и можете их принимать'
-                : 'Вы не видите новые заказы и не можете их принимать';
-        }
-    }
-}
-
-const statsSection = document.querySelector('#profile-driver-stats .profile-section:last-child');
-if (statsSection && driver.status === 'active') {
-    let resignButton = statsSection.querySelector('#resign-driver-btn');
-    if (!resignButton) {
-        resignButton = document.createElement('button');
-        resignButton.id = 'resign-driver-btn';
-        resignButton.className = 'order-submit-btn';
-        resignButton.style.background = '#dc3545';
-        resignButton.style.marginTop = '20px';
-        resignButton.textContent = 'Уволиться';
-        resignButton.onclick = resignDriver;
-        statsSection.appendChild(resignButton);
-    }
-}
-}
-
-// Функция переключения статуса работы водителя
-async function toggleWorkStatus() {
-
-const driver = drivers.find(d => d.userId === currentUser.id);
-if (!driver) {
-    showNotification('Данные водителя не найдены', 'error');
-    return;
-}
-
-const newStatus = driver.workStatus === 'active' ? 'inactive' : 'active';
-
-try {
-    const response = await fetch(`${API_BASE_URL}/driver/work-status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ workStatus: newStatus })
-    });
-
-    const data = await response.json();
-    if (data.success) {
-        // Обновляем локальный кэш
-        driver.workStatus = newStatus;
-
-// Обновляем отображение
-        await updateDriverStats();
-        updateOrderButtonVisibility();
-
-showNotification(`Статус работы изменен на "${newStatus === 'active' ? 'Активен' : 'Неактивен'}"`, 'success');
-
-if (currentUser.isAdmin) {
-    loadDriversList();
-        }
-    } else {
-        showNotification(data.message || 'Ошибка изменения статуса', 'error');
-    }
-} catch (error) {
-    console.error('Ошибка изменения статуса работы:', error);
-    showNotification('Ошибка соединения с сервером', 'error');
-}
-}
-
-// Расчет заработка водителя
-function calculateDriverEarnings() {
-if (!currentUser || !currentUser.isDriver) return 0;
-
-const driverOrders = orders.filter(order =>
-    order.driverId === currentUser.id &&
-    order.status === 'delivered'
-);
-
-// Предположим, что водитель получает 70% от стоимости заказа
-return driverOrders.reduce((sum, order) => sum + (order.price * 0.7), 0).toFixed(0);
-}
-
-// Функция для увольнения/деактивации водителя (самостоятельно)
-function resignDriver() {
-
-// Проверяем, есть ли активные заказы
-const activeOrders = orders.filter(order =>
-    order.driverId === currentUser.id &&
-    (order.status === 'confirmed' || order.status === 'in_transit')
-);
-
-if (activeOrders.length > 0) {
-    showNotification(`У вас есть ${activeOrders.length} активных заказа(ов). Завершите их или передайте другому водителю перед увольнением.`, 'error');
-    return;
-}
-
-// Показываем модальное окно подтверждения
-const modalHTML = `
-    <div class="modal active" id="resignModal">
-        <div class="auth-container" style="max-width: 500px;">
-            <div class="auth-header">
-                <button class="close-auth-btn" onclick="closeModal('resignModal')">×</button>
-                <div class="auth-logo">Увольнение</div>
-            </div>
-
-            <div class="auth-form-container">
-                <h3 style="margin-bottom: 15px; color: #333;">Вы уверены, что хотите уволиться?</h3>
-                <p style="margin-bottom: 20px; color: #666;">Это действие:</p>
-                <ul style="margin-bottom: 20px; padding-left: 20px; color: #666;">
-                    <li>Сделает ваш профиль водителя неактивным</li>
-                    <li>Вы больше не сможете принимать новые заказы</li>
-                    <li>Ваша статистика будет сохранена</li>
-                    <li>Вы сможете восстановить статус через администратора</li>
-                </ul>
-
-                <div class="order-form-group">
-                    <label for="resign-reason">Причина ухода (необязательно)</label>
-                    <textarea id="resign-reason" rows="3" placeholder="Укажите причину ухода..."></textarea>
-                </div>
-
-                <div class="forgot-password-buttons">
-                    <button class="back-btn" onclick="closeModal('resignModal')">Отмена</button>
-                    <button class="recovery-btn" style="background: #dc3545;" onclick="confirmResignation()">Подтвердить увольнение</button>
-                </div>
-            </div>
-        </div>
-    </div>
-`;
-
-document.body.insertAdjacentHTML('beforeend', modalHTML);
-}
-
-// Подтверждение увольнения
-function confirmResignation() {
-const reason = document.getElementById('resign-reason').value;
-
-const driverIndex = drivers.findIndex(d => d.userId === currentUser.id);
-if (driverIndex === -1) {
-    showNotification('Ошибка: данные водителя не найдены', 'error');
-    return;
-}
-
-// Деактивируем водителя
-drivers[driverIndex].status = 'inactive';
-drivers[driverIndex].inactiveSince = new Date().toISOString();
-drivers[driverIndex].inactiveReason = 'resignation';
-drivers[driverIndex].resignationReason = reason;
-
-// Обновляем пользователя
-const userIndex = users.findIndex(u => u.id === currentUser.id);
-if (userIndex !== -1) {
-    users[userIndex].isDriver = false; // Снимаем флаг водителя
-}
-
-// Обновляем текущего пользователя
-currentUser.isDriver = false;
-
-// Уведомляем администраторов
-const admins = users.filter(u => u.isAdmin);
-admins.forEach(admin => {
-    createNotification(
-        admin.id,
-        'Водитель уволился',
-        `Водитель ${currentUser.firstName} ${currentUser.lastName} уволился.${reason ? ` Причина: ${reason}` : ''}`,
-        'warning'
-    );
-});
-
-showNotification('Вы успешно уволились. Ваш профиль водителя деактивирован.', 'info');
-closeModal('resignModal');
-
-// Обновляем интерфейс
-updateOrderButtonVisibility()
-updateProfileNavigation();
-showProfileTab('data');
-updateDriverStats();
-
-// Скрываем блок "Статус заявки" после увольнения
-const applicationStatus = document.getElementById('driver-application-status');
-if (applicationStatus) {
-    applicationStatus.style.display = 'none';
-}
-
-showPage('profile');
-}
-
 // Функция для увольнения водителя администратором
 async function dismissDriver(driverUserId) {
 
     // Проверяем, есть ли активные заказы у водителя
     await loadOrders(); // Загружаем свежие данные о заказах
-const activeOrders = orders.filter(order =>
+    const activeOrders = orders.filter(order =>
     order.driverId === driverUserId &&
     (order.status === 'confirmed' || order.status === 'in_transit')
 );
 
 if (activeOrders.length > 0) {
         // Показываем модальное окно для обработки активных заказов
-        const driver = drivers.find(d => d.userId === driverUserId);
+        
         const driverUser = users.find(u => u.id === driverUserId);
 
     const modalHTML = `
@@ -2183,7 +1720,7 @@ async function processDismissalSimple(driverUserId) {
     }
 }
 
-// Загрузка списка водителей (обновленная версия)
+// Загрузка списка водителей 
 async function loadDriversList() {
     if (!currentUser || !currentUser.isAdmin) return;
 
@@ -2209,7 +1746,6 @@ async function loadDriversList() {
     }
 
     let html = '';
-    // ОТРИСОВКА ТОЛЬКО АКТИВНЫХ ВОДИТЕЛЕЙ (status == 'active')
     drivers
         .filter(driver => driver.status === 'active')
         .forEach((driver, index) => {
@@ -2246,92 +1782,6 @@ async function loadDriversList() {
         `;
     });
     container.innerHTML = html;
-}
-
-// Функция восстановления водителя
-async function restoreDriver(driverUserId) {
-
-try {
-    const response = await fetch(`${API_BASE_URL}/admin/drivers/${driverUserId}/restore`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
-    });
-
-    const data = await response.json();
-    if (data.success) {
-        showNotification('Водитель восстановлен', 'success');
-loadDriversList();
-        loadAdminOrders();
-    } else {
-        showNotification(data.message || 'Ошибка восстановления водителя', 'error');
-    }
-} catch (error) {
-    console.error('Ошибка восстановления водителя:', error);
-    showNotification('Ошибка соединения с сервером', 'error');
-}
-}
-
-// Функция для отображения истории увольнений в профиле администратора
-function showResignationHistory() {
-
-const allRecords = [...resignations, ...dismissals]
-    .sort((a, b) => new Date(b.dismissedAt || b.resignedAt) - new Date(a.dismissedAt || a.resignedAt));
-
-let html = `
-    <div class="profile-section">
-        <h2>История увольнений водителей</h2>
-        <div class="orders-table-container" style="display: block;">
-            <div class="table-header">
-                <div class="table-header-item">ВОДИТЕЛЬ</div>
-                <div class="table-header-item">ТИП</div>
-                <div class="table-header-item">ПРИЧИНА</div>
-                <div class="table-header-item">ЗАКАЗОВ ЗАДЕТО</div>
-                <div class="table-header-item">ДАТА</div>
-                <div class="table-header-item">ДЕЙСТВИЯ</div>
-            </div>
-`;
-
-allRecords.forEach(record => {
-    const user = users.find(u => u.id === record.userId);
-    const driver = drivers.find(d => d.userId === record.userId);
-    const isDismissal = 'dismissedBy' in record;
-
-    html += `
-        <div class="order-row">
-            <div class="order-cell" data-label="Водитель">
-                ${user ? `${user.firstName} ${user.lastName}` : 'Неизвестно'}
-            </div>
-            <div class="order-cell" data-label="Тип">
-                <span class="order-status ${isDismissal ? 'cancelled' : 'processing'}">
-                    ${isDismissal ? 'Уволен' : 'Уволился'}
-                </span>
-            </div>
-            <div class="order-cell" data-label="Причина">
-                ${record.reason || 'Не указана'}
-            </div>
-            <div class="order-cell" data-label="Заказов задето">
-                ${record.ordersAffected || 0}
-            </div>
-            <div class="order-cell date-container" data-label="Дата">
-                <span class="date-day">${new Date(record.dismissedAt || record.resignedAt).toLocaleDateString()}</span>
-            </div>
-            <div class="order-cell" data-label="Действия">
-                ${driver && driver.status === 'inactive' ?
-                    `<button class="track-btn" onclick="restoreDriver(${record.userId})">Восстановить</button>` :
-                    'Активен'
-                }
-            </div>
-        </div>
-    `;
-});
-
-html += `
-        </div>
-    </div>
-`;
-
-return html;
 }
 
 // ФУНКЦИИ ДЛЯ АДМИНИСТРАТОРА
@@ -2391,90 +1841,7 @@ updateAdminStats();
 }
 
 // Модальное окно обработки заказа администратором
-function openOrderModal(orderId) {
-const existingModal = document.getElementById('orderProcessingModal');
-if (existingModal) {
-    existingModal.remove();
-}
 
-const order = orders.find(o => o.id === orderId);
-if (!order) return;
-
-const user = users.find(u => u.id === order.userId);
-
-const modalHTML = `
-    <div class="modal active" id="orderProcessingModal">
-        <div class="auth-container" style="max-width: 600px;">
-            <div class="auth-header">
-                <button class="close-auth-btn" onclick="closeModal('orderProcessingModal')">×</button>
-                <div class="auth-logo">Обработка заказа #${orderId}</div>
-            </div>
-
-            <div class="auth-form-container">
-                <h3>Детали заказа</h3>
-                <div class="order-form-row">
-                    <div class="order-form-group">
-                        <label>Клиент:</label>
-                        <input type="text" class="profile-field-readonly" value="${user ? `${user.firstName} ${user.lastName}` : 'Неизвестно'}" readonly>
-                    </div>
-                    <div class="order-form-group">
-                        <label>Телефон:</label>
-                        <input type="text" class="profile-field-readonly" value="${order.senderPhone}" readonly>
-                    </div>
-                </div>
-
-                <div class="order-form-group">
-                    <label>Маршрут:</label>
-                    <input type="text" class="profile-field-readonly" value="${order.pickupAddress} → ${order.deliveryAddress}" readonly>
-                </div>
-
-                <div class="order-form-row">
-                    <div class="order-form-group">
-                        <label>Груз:</label>
-                        <input type="text" class="profile-field-readonly" value="${order.cargoDescription}" readonly>
-                    </div>
-                    <div class="order-form-group">
-                        <label>Вес/Объем:</label>
-                        <input type="text" class="profile-field-readonly" value="${order.cargoWeight} кг / ${order.cargoVolume} м³" readonly>
-                    </div>
-                </div>
-
-                <div class="order-form-row">
-                    <div class="order-form-group">
-                        <label>Стоимость:</label>
-                        <input type="text" class="profile-field-readonly" value="${order.price} ₽" readonly>
-                    </div>
-                    <div class="order-form-group">
-                        <label>Дата отправки:</label>
-                        <input type="text" class="profile-field-readonly" value="${new Date(order.shippingDate).toLocaleDateString()}" readonly>
-                    </div>
-                </div>
-
-                <h3>Решение по заказу</h3>
-                <div class="order-form-group">
-                    <label for="order-decision">Решение:</label>
-                    <select id="order-decision">
-                        <option value="confirm">Подтвердить заказ</option>
-                        <option value="reject">Отклонить заказ</option>
-                    </select>
-                </div>
-
-                <div class="order-form-group">
-                    <label for="admin-comment">Комментарий для клиента:</label>
-                    <textarea id="admin-comment" rows="3" placeholder="Введите комментарий для клиента..."></textarea>
-                </div>
-
-                <div class="forgot-password-buttons">
-                    <button class="back-btn" onclick="closeModal('orderProcessingModal')">Отмена</button>
-                    <button class="recovery-btn" onclick="processOrderDecision(${orderId})">Применить решение</button>
-                </div>
-            </div>
-        </div>
-    </div>
-`;
-
-document.body.insertAdjacentHTML('beforeend', modalHTML);
-}
 
 // Обработка решения администратора
 async function processOrderDecision(orderId, directDecision = null) {
@@ -2687,247 +2054,6 @@ try {
 }
 }
 
-// Загрузка списка водителей
-async function loadDriversList() {
-if (!currentUser || !currentUser.isAdmin) return;
-
-const container = document.getElementById('drivers-list-body');
-if (!container) return;
-
-try {
-    const response = await fetch(`${API_BASE_URL}/admin/drivers`, { credentials: 'include' });
-    const data = await response.json();
-    if (data.success) {
-        drivers = (data.drivers || []).map(normalizeDriver);
-    } else {
-        drivers = [];
-    }
-} catch (error) {
-    console.error('Ошибка загрузки водителей:', error);
-    drivers = [];
-}
-
-let html = '';
-
-drivers.forEach((driver, index) => {
-    const activeOrders = orders.filter(order =>
-        order.driverId === driver.userId &&
-        (order.status === 'confirmed' || order.status === 'in_transit')
-    ).length;
-
-    html += `
-        <div class="order-row">
-            <div class="order-cell" data-label="ID">${index + 1}</div>
-            <div class="order-cell" data-label="Имя Фамилия">${driver.firstName || ''} ${driver.lastName || ''}</div>
-            <div class="order-cell" data-label="Телефон">${driver.phone || ''}</div>
-            <div class="order-cell" data-label="Автомобиль">${driver.carModel || ''} (${driver.carNumber || ''})</div>
-            <div class="order-cell" data-label="Доставок">${driver.completedDeliveries || 0}</div>
-            <div class="order-cell" data-label="Статус работы">
-                <span class="order-status ${driver.workStatus === 'active' ? 'delivered' : 'cancelled'}">
-                    ${driver.workStatus === 'active' ? 'Активен' : 'Неактивен'}
-                </span>
-            </div>
-            <div class="order-cell date-container" data-label="Дата найма">
-                <span class="date-day">${driver.hireDate ? new Date(driver.hireDate).toLocaleDateString() : ''}</span>
-            </div>
-            <div class="order-cell" data-label="Действия">
-                <button class="track-btn" style="background:#dc3545; border-color:#dc3545;" onclick="dismissDriver(${driver.userId})">Уволить</button>
-            </div>
-        </div>
-    `;
-});
-
-container.innerHTML = html;
-}
-
-// Функция загрузки истории увольнений
-function loadDismissalHistory() {
-if (!currentUser || !currentUser.isAdmin) return;
-
-const container = document.getElementById('dismissal-history-body');
-const noHistory = document.getElementById('no-dismissal-history');
-if (!container) return;
-
-// Объединяем все записи
-const allRecords = [...dismissals, ...resignations]
-    .sort((a, b) => new Date(b.dismissedAt || b.resignedAt) - new Date(a.dismissedAt || a.resignedAt));
-
-if (allRecords.length === 0) {
-    if (container) container.style.display = 'none';
-    if (noHistory) noHistory.style.display = 'block';
-    return;
-}
-
-let html = '';
-
-allRecords.forEach((record, index) => {
-    const user = users.find(u => u.id === record.userId);
-    const driver = drivers.find(d => d.userId === record.userId);
-    const isDismissal = 'dismissedBy' in record;
-
-    html += `
-        <div class="order-row">
-            <div class="order-cell" data-label="Водитель">
-                ${user ? `${user.firstName} ${user.lastName}` : 'Неизвестно'}
-            </div>
-            <div class="order-cell" data-label="Тип">
-                <span class="order-status ${isDismissal ? 'cancelled' : 'processing'}">
-                    ${isDismissal ? 'Уволен' : 'Уволился'}
-                </span>
-            </div>
-            <div class="order-cell" data-label="Причина">
-                ${record.reason || 'Не указана'}
-            </div>
-            <div class="order-cell" data-label="Заказов задето">
-                ${record.ordersAffected || 0}
-            </div>
-            <div class="order-cell date-container" data-label="Дата">
-                <span class="date-day">${new Date(record.dismissedAt || record.resignedAt).toLocaleDateString()}</span>
-            </div>
-            <div class="order-cell" data-label="Действия">
-                <div style="display: flex; flex-direction: column; gap: 5px;">
-                    <button class="view-btn" onclick="viewDismissalDetails(${record.userId})">Подробнее</button>
-                    ${driver && driver.status === 'inactive' && isDismissal ?
-                        `<button class="track-btn" onclick="restoreDriver(${record.userId})">Восстановить</button>` :
-                        ''
-                    }
-                </div>
-            </div>
-        </div>
-    `;
-});
-
-container.innerHTML = html;
-if (container) container.style.display = 'block';
-if (noHistory) noHistory.style.display = 'none';
-}
-
-// Функция просмотра деталей увольнения
-function viewDismissalDetails(userId) {
-const user = users.find(u => u.id === userId);
-const driver = drivers.find(d => d.userId === userId);
-
-const dismissalRecord = dismissals.find(d => d.userId === userId);
-const resignationRecord = resignations.find(r => r.userId === userId);
-const record = dismissalRecord || resignationRecord;
-
-if (!record) return;
-
-const isDismissal = 'dismissedBy' in record;
-const dismissedByUser = isDismissal ? users.find(u => u.id === record.dismissedBy) : null;
-
-let modalHTML = `
-    <div class="modal active" id="dismissalDetailsModal">
-        <div class="auth-container" style="max-width: 600px;">
-            <div class="auth-header">
-                <button class="close-auth-btn" onclick="closeModal('dismissalDetailsModal')">×</button>
-                <div class="auth-logo">Детали ${isDismissal ? 'увольнения' : 'ухода'}</div>
-            </div>
-
-            <div class="auth-form-container">
-                <h3>Информация о водителе</h3>
-                <div class="order-form-row">
-                    <div class="order-form-group">
-                        <label>Имя Фамилия:</label>
-                        <input type="text" class="profile-field-readonly" value="${user ? `${user.firstName} ${user.lastName}` : 'Неизвестно'}" readonly>
-                    </div>
-                    <div class="order-form-group">
-                        <label>Телефон:</label>
-                        <input type="text" class="profile-field-readonly" value="${user ? user.phone : 'Неизвестно'}" readonly>
-                    </div>
-                </div>
-
-                <div class="order-form-row">
-                    <div class="order-form-group">
-                        <label>Автомобиль:</label>
-                        <input type="text" class="profile-field-readonly" value="${driver ? `${driver.carModel} (${driver.carNumber})` : 'Неизвестно'}" readonly>
-                    </div>
-                    <div class="order-form-group">
-                        <label>Тип ${isDismissal ? 'увольнения' : 'ухода'}:</label>
-                        <input type="text" class="profile-field-readonly" value="${isDismissal ? 'Уволен администратором' : 'Уволился самостоятельно'}" readonly>
-                    </div>
-                </div>
-
-                <div class="order-form-group">
-                    <label>Причина:</label>
-                    <textarea class="profile-field-readonly" rows="3" readonly>${record.reason || 'Не указана'}</textarea>
-                </div>
-
-                <div class="order-form-row">
-                    <div class="order-form-group">
-                        <label>Дата:</label>
-                        <input type="text" class="profile-field-readonly" value="${new Date(record.dismissedAt || record.resignedAt).toLocaleString()}" readonly>
-                    </div>
-                    ${isDismissal ? `
-                        <div class="order-form-group">
-                            <label>Уволил:</label>
-                            <input type="text" class="profile-field-readonly" value="${dismissedByUser ? `${dismissedByUser.firstName} ${dismissedByUser.lastName}` : 'Неизвестно'}" readonly>
-                        </div>
-                    ` : ''}
-                </div>
-
-                ${record.ordersAffected ? `
-                    <div class="order-form-group">
-                        <label>Заказов задето:</label>
-                        <input type="text" class="profile-field-readonly" value="${record.ordersAffected}" readonly>
-                    </div>
-                ` : ''}
-
-                ${record.actionTaken ? `
-                    <div class="order-form-group">
-                        <label>Действие с заказами:</label>
-                        <input type="text" class="profile-field-readonly" value="${getActionTakenText(record.actionTaken)}" readonly>
-                    </div>
-                ` : ''}
-
-                <div class="forgot-password-buttons">
-                    ${driver && driver.status === 'inactive' && isDismissal ?
-                        `<button class="recovery-btn" onclick="restoreDriver(${userId}); closeModal('dismissalDetailsModal')">Восстановить водителя</button>` :
-                        ''
-                    }
-                    <button class="back-btn" onclick="closeModal('dismissalDetailsModal')">Закрыть</button>
-                </div>
-            </div>
-        </div>
-    </div>
-`;
-
-document.body.insertAdjacentHTML('beforeend', modalHTML);
-}
-
-// Вспомогательная функция для текста действий
-function getActionTakenText(action) {
-const actions = {
-    'reassign': 'Переназначены другому водителю',
-    'cancel': 'Отменены с возвратом средств',
-    'keep': 'Оставлены текущему водителю'
-};
-return actions[action] || action;
-}
-// Изменение статуса водителя
-function toggleDriverStatus(userId) {
-const driverIndex = drivers.findIndex(d => d.userId === userId);
-if (driverIndex === -1) return;
-
-drivers[driverIndex].status = drivers[driverIndex].status === 'active' ? 'inactive' : 'active';
-
-// Отправляем уведомление водителю
-createNotification(
-    userId,
-    'Изменение статуса',
-    `Ваш статус изменен на "${drivers[driverIndex].status === 'active' ? 'Активен' : 'Неактивен'}".`,
-    'info'
-);
-
-showNotification('Статус водителя изменен', 'success');
-loadDriversList();
-}
-
-// Обновление статистики администратора
-function updateAdminStats() {
-// Статистика скрыта по требованиям — ничего не делаем
-}
-
 // Отправка заявки на роль водителя
 async function submitDriverApplication(event) {
 event.preventDefault();
@@ -2975,36 +2101,6 @@ return false;
 }
 }
 
-// Создание уведомления
-function createNotification(userId, title, message, type = 'info') {
-const notification = {
-    id: notifications.length + 1,
-    userId: userId,
-    title: title,
-    message: message,
-    type: type,
-    read: false,
-    createdAt: new Date().toISOString()
-};
-
-notifications.push(notification);
-
-// Если это текущий пользователь, показываем уведомление
-if (currentUser && currentUser.id === userId) {
-    showNotification(`${title}: ${message}`, type);
-}
-
-return notification;
-}
-
-// Пометка уведомления как прочитанного
-function markNotificationAsRead(notificationId) {
-const notificationIndex = notifications.findIndex(n => n.id === notificationId);
-if (notificationIndex !== -1) {
-    notifications[notificationIndex].read = true;
-}
-}
-
 // Закрытие модального окна
 function closeModal(modalId) {
 const modal = document.getElementById(modalId);
@@ -3018,14 +2114,7 @@ if (modal) {
 }
 }
 
-// Функции сброса фильтров
-function resetDriverFilters() {
-document.getElementById('driver-distance-filter').value = 'all';
-document.getElementById('driver-weight-filter').value = 'all';
-document.getElementById('driver-date-filter').value = 'all';
-}
-
-//
+// Переключение вкладок профиля
 function showProfileTab(tabName) {
 // Скрываем все вкладки
 const tabs = document.querySelectorAll('.profile-tab');
@@ -3115,422 +2204,7 @@ if (existingApp) {
 }
 }
 
-// Детали заказа
-function openAdminOrderDetails(orderId) {
-const order = orders.find(o => o.id === orderId);
-if (!order) return;
-
-const user = users.find(u => u.id === order.userId);
-const driver = order.driverId ? drivers.find(d => d.userId === order.driverId) : null;
-const driverUser = driver ? users.find(u => u.id === driver.userId) : null;
-
-const adminStatus = order.status;
-const clientStatus = order.clientStatus || order.status;
-const adminStatusText = getStatusText(adminStatus, true);
-const clientStatusText = getStatusText(clientStatus, false);
-
-let modalHTML = `
-    <div class="modal active" id="adminOrderDetailsModal">
-        <div class="auth-container order-details-modal">
-            <div class="auth-header">
-                <button class="close-auth-btn" onclick="closeModal('adminOrderDetailsModal')">×</button>
-                <div class="auth-logo">Заказ #${orderId}</div>
-            </div>
-
-            <div class="auth-form-container">
-                <div class="order-form-row">
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Статус (админ)</div>
-                        <div class="order-detail-value">
-                            <span class="status-badge status-${adminStatus}">${adminStatusText}</span>
-                        </div>
-                    </div>
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Статус (клиент)</div>
-                        <div class="order-detail-value">
-                            <span class="status-badge status-${clientStatus}">${clientStatusText}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Остальные детали заказа -->
-                <div class="order-detail-item">
-                    <div class="order-detail-label">Клиент</div>
-                    <div class="order-detail-value">${user ? `${user.firstName} ${user.lastName}` : 'Неизвестно'}</div>
-                </div>
-
-                <div class="order-detail-item">
-                    <div class="order-detail-label">Телефон</div>
-                    <div class="order-detail-value">${order.senderPhone}</div>
-                </div>
-
-                <div class="order-detail-item">
-                    <div class="order-detail-label">Маршрут</div>
-                    <div class="order-detail-value">
-                        <div><strong>Откуда:</strong> ${order.pickupAddress}</div>
-                        <div><strong>Куда:</strong> ${order.deliveryAddress}</div>
-                        <div><strong>Расстояние:</strong> ${order.distance || 'Не указано'} км</div>
-                    </div>
-                </div>
-
-                <div class="order-detail-item">
-                    <div class="order-detail-label">Груз</div>
-                    <div class="order-detail-value">
-                        <div><strong>Описание:</strong> ${order.cargoDescription}</div>
-                        <div><strong>Категория:</strong> ${getCategoryName(order.productCategory)}</div>
-                        <div><strong>Вес/Объем:</strong> ${order.cargoWeight} кг / ${order.cargoVolume} м³</div>
-                        ${order.cargoType ? `<div><strong>Тип:</strong> ${getCargoTypeName(order.cargoType)}</div>` : ''}
-                    </div>
-                </div>
-
-                <div class="order-detail-item">
-                    <div class="order-detail-label">Стоимость</div>
-                    <div class="order-detail-value">
-                        <div><strong>Общая:</strong> ${order.price || 'Не указана'} ₽</div>
-                        ${order.cancellationFee ? `<div><strong>Штраф за отмену:</strong> ${order.cancellationFee} ₽</div>` : ''}
-                        ${order.refundAmount ? `<div><strong>К возврату:</strong> ${order.refundAmount} ₽</div>` : ''}
-                    </div>
-                </div>
-
-                ${driverUser ? `
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Водитель</div>
-                        <div class="order-detail-value">
-                            <div><strong>Имя Фамилия:</strong> ${driverUser.firstName} ${driverUser.lastName}</div>
-                            <div><strong>Автомобиль:</strong> ${driver.carModel} (${driver.carNumber})</div>
-                            <div><strong>Телефон:</strong> ${driverUser.phone}</div>
-                        </div>
-                    </div>
-                ` : ''}
-
-                ${order.comments ? `
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Комментарий клиента</div>
-                        <div class="order-detail-value">${order.comments}</div>
-                    </div>
-                ` : ''}
-
-                ${order.adminComment ? `
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Комментарий администратора</div>
-                        <div class="order-detail-value">${order.adminComment}</div>
-                    </div>
-                ` : ''}
-
-                ${order.cancellationReason ? `
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Причина отмены</div>
-                        <div class="order-detail-value">${order.cancellationReason}</div>
-                    </div>
-                ` : ''}
-
-                <div class="forgot-password-buttons">
-                    ${adminStatus === ORDER_STATUSES.ADMIN.NEW ? `
-                        <button class="recovery-btn" onclick="openOrderModal(${orderId}); closeModal('adminOrderDetailsModal')">Обработать заказ</button>
-                    ` : ''}
-
-                    ${adminStatus === ORDER_STATUSES.ADMIN.CONFIRMED && !order.driverId ? `
-                        <button class="recovery-btn" onclick="assignDriverModal(${orderId}); closeModal('adminOrderDetailsModal')">Назначить водителя</button>
-                    ` : ''}
-
-                    <button class="back-btn" onclick="closeModal('adminOrderDetailsModal')">Закрыть</button>
-                </div>
-            </div>
-        </div>
-    </div>
-`;
-
-document.body.insertAdjacentHTML('beforeend', modalHTML);
-}
-
-function openCancelOrderModal(orderId) {
-const order = orders.find(o => o.id === orderId);
-if (!order) return;
-
-const modalHTML = `
-    <div class="modal active" id="cancelOrderModal">
-        <div class="auth-container" style="max-width: 500px;">
-            <div class="auth-header">
-                <button class="close-auth-btn" onclick="closeModal('cancelOrderModal')">×</button>
-                <div class="auth-logo">Отмена заказа #${orderId}</div>
-            </div>
-
-            <div class="auth-form-container">
-                <p style="margin-bottom: 20px; color: #666;">Вы собираетесь отменить заказ. Пожалуйста, укажите причину отмены.</p>
-
-                <div class="order-form-group">
-                    <label for="cancelReason">Причина отмены:</label>
-                    <select id="cancelReason" style="margin-bottom: 10px;">
-                        <option value="">Выберите причину</option>
-                        <option value="changed_plans">Изменились планы</option>
-                        <option value="found_cheaper">Нашел более дешевый вариант</option>
-                        <option value="no_longer_needed">Груз больше не нужен</option>
-                        <option value="date_issue">Проблемы с датой отправки</option>
-                        <option value="other">Другое</option>
-                    </select>
-                    <textarea id="cancelReasonDetails" rows="3" placeholder="Дополнительные детали (необязательно)"></textarea>
-                </div>
-
-                <div class="important-notice" style="margin: 20px 0;">
-                    <p><strong>Внимание!</strong> При отмене заказа может быть удержана часть суммы в качестве штрафа.</p>
-                </div>
-
-                <div class="forgot-password-buttons">
-                    <button class="back-btn" onclick="closeModal('cancelOrderModal')">Отмена</button>
-                    <button class="recovery-btn" onclick="confirmCancelOrder(${orderId})" style="background: #dc3545;">Подтвердить отмену</button>
-                </div>
-            </div>
-        </div>
-    </div>
-`;
-
-document.body.insertAdjacentHTML('beforeend', modalHTML);
-}
-
-// Функция для подтверждения отмены заказа с фиксированным штрафом 10%
-function confirmCancelOrder(orderId) {
-// Находим заказ
-const orderIndex = orders.findIndex(o => o.id === orderId);
-if (orderIndex === -1) {
-    showNotification('Заказ не найден', 'error');
-    return;
-}
-
-const order = orders[orderIndex];
-
-// Расчет штрафа за отмену - всегда 10%
-const cancellationFee = order.price * 0.10; // Фиксированный штраф 10%
-const cancellationReason = 'Отмена заказа (штраф 10%)';
-
-// Обновляем статус заказа
-orders[orderIndex].status = ORDER_STATUSES.ADMIN.CANCELLED_BY_CLIENT;
-orders[orderIndex].clientStatus = ORDER_STATUSES.CLIENT.CANCELLED;
-orders[orderIndex].cancelledAt = new Date().toISOString();
-orders[orderIndex].cancellationReason = cancellationReason;
-orders[orderIndex].cancellationFee = cancellationFee;
-orders[orderIndex].refundAmount = order.price - cancellationFee;
-
-// Уведомление администратора
-const admins = users.filter(u => u.isAdmin);
-admins.forEach(admin => {
-    createNotification(
-        admin.id,
-        'Заказ отменен',
-        `Заказ #${orderId} был отменен. Штраф 10%: ${cancellationFee.toFixed(2)} ₽.`,
-        'warning'
-    );
-});
-
-// Уведомление клиента
-createNotification(
-    order.userId,
-    'Заказ отменен',
-    `Ваш заказ #${orderId} был отменен. Удержан штраф 10%: ${cancellationFee.toFixed(2)} ₽. К возврату: ${orders[orderIndex].refundAmount.toFixed(2)} ₽.`,
-    'warning'
-);
-
-// Обновляем интерфейс
-loadAdminOrders();
-if (currentUser && (currentUser.id === order.userId || currentUser.isDriver)) {
-    updateProfileOrderStats();
-}
-if (currentUser && currentUser.id === order.userId) {
-    updateProfileOrderStats();
-    // Также нужно обновить список заказов на странице профиля
-    if (document.getElementById('profile-orders').style.display !== 'none') {
-        // Если клиент находится на вкладке "Мои заказы"
-        const userOrders = orders.filter(o => o.userId === currentUser.id);
-        displayUserOrders(userOrders);
-        toggleOrdersVisibility(userOrders.length > 0);
-    }
-}
-
-// Закрываем модальное окно, если оно открыто
-closeModal('cancelOrderModal');
-
-// Также закрываем модальное окно деталей заказа, если оно открыто
-const detailsModal = document.getElementById('orderDetailsModal');
-if (detailsModal) {
-    closeModal('orderDetailsModal');
-}
-
-return orders[orderIndex];
-}
-
-function openDriverDetailsModal(driverUserId) {
-const driver = drivers.find(d => d.userId === driverUserId);
-const driverUser = users.find(u => u.id === driverUserId);
-const application = driverApplications.find(app => app.userId === driverUserId);
-
-if (!driver || !driverUser) return;
-
-const modalHTML = `
-    <div class="modal active" id="driverDetailsModal">
-        <div class="auth-container" style="max-width: 700px;">
-            <div class="auth-header">
-                <button class="close-auth-btn" onclick="closeModal('driverDetailsModal')">×</button>
-                <div class="auth-logo">Информация о водителе</div>
-            </div>
-
-            <div class="auth-form-container">
-                <h3>Личные данные</h3>
-                <div class="order-form-row">
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Имя Фамилия</div>
-                        <div class="order-detail-value">${driverUser.firstName} ${driverUser.lastName}</div>
-                    </div>
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Статус</div>
-                        <div class="order-detail-value">
-                            <span class="status-badge ${driver.status === 'active' ? 'status-delivered' : 'status-cancelled'}">
-                                ${driver.status === 'active' ? 'Активен' : 'Неактивен'}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="order-form-row">
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Телефон</div>
-                        <div class="order-detail-value">${driverUser.phone}</div>
-                    </div>
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Email</div>
-                        <div class="order-detail-value">${driverUser.email}</div>
-                    </div>
-                </div>
-
-                <h3>Данные из заявки</h3>
-                ${application ? `
-                    <div class="order-form-row">
-                        <div class="order-detail-item">
-                            <div class="order-detail-label">Водительское удостоверение</div>
-                            <div class="order-detail-value">${application.licenseNumber || 'Не указано'}</div>
-                        </div>
-                        <div class="order-detail-item">
-                            <div class="order-detail-label">Опыт вождения</div>
-                            <div class="order-detail-value">${application.experience || 'Не указано'} лет</div>
-                        </div>
-                    </div>
-
-                    <div class="order-form-row">
-                        <div class="order-detail-item">
-                            <div class="order-detail-label">Дата подачи заявки</div>
-                            <div class="order-detail-value">${new Date(application.appliedAt).toLocaleDateString('ru-RU')}</div>
-                        </div>
-                        <div class="order-detail-item">
-                            <div class="order-detail-label">Статус заявки</div>
-                            <div class="order-detail-value">
-                                <span class="status-badge ${application.status === 'approved' ? 'status-delivered' :
-                                                            application.status === 'rejected' ? 'status-cancelled' : 'status-new'}">
-                                    ${application.status === 'approved' ? 'Одобрена' :
-                                    application.status === 'rejected' ? 'Отклонена' : 'На рассмотрении'}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    ${application.additionalInfo ? `
-                        <div class="order-detail-item">
-                            <div class="order-detail-label">Дополнительная информация</div>
-                            <div class="order-detail-value">${application.additionalInfo}</div>
-                        </div>
-                    ` : ''}
-                ` : '<p class="order-detail-value">Заявка не найдена</p>'}
-
-                <h3>Автомобиль</h3>
-                <div class="order-form-row">
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Модель</div>
-                        <div class="order-detail-value">${driver.carModel || 'Не указано'}</div>
-                    </div>
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Госномер</div>
-                        <div class="order-detail-value">${driver.carNumber || 'Не указано'}</div>
-                    </div>
-                </div>
-
-                <div class="order-form-row">
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Тип кузова</div>
-                        <div class="order-detail-value">${getCarTypeName(driver.carType) || 'Не указано'}</div>
-                    </div>
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Грузоподъемность</div>
-                        <div class="order-detail-value">${driver.maxWeight || 'Не указано'} кг</div>
-                    </div>
-                </div>
-
-                <h3>Статистика</h3>
-                <div class="order-form-row">
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Всего доставок</div>
-                        <div class="order-detail-value">${driver.completedDeliveries || 0}</div>
-                    </div>
-                </div>
-
-                <div class="order-form-row">
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Доход</div>
-                        <div class="order-detail-value">${calculateDriverEarnings(driverUserId)} ₽</div>
-                    </div>
-                    <div class="order-detail-item">
-                        <div class="order-detail-label">Активных заказов</div>
-                        <div class="order-detail-value">
-                            ${orders.filter(o => o.driverId === driverUserId &&
-                                (o.status === 'confirmed' || o.status === 'in_transit')).length}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="forgot-password-buttons" style="margin-top: 20px;">
-                    ${driver.status === 'active' ? `
-                        <button class="recovery-btn" style="background: #dc3545;" onclick="dismissDriver(${driverUserId})">Уволить</button>
-                    ` : `
-                        <button class="recovery-btn" onclick="restoreDriver(${driverUserId})">Восстановить</button>
-                    `}
-                    <button class="back-btn" onclick="closeModal('driverDetailsModal')">Закрыть</button>
-                </div>
-            </div>
-        </div>
-    </div>
-`;
-
-document.body.insertAdjacentHTML('beforeend', modalHTML);
-}
-
-function changeOrderStatus(orderId, newStatus) {
-const orderIndex = orders.findIndex(o => o.id === orderId);
-if (orderIndex === -1) return;
-
-orders[orderIndex].status = newStatus;
-orders[orderIndex].statusUpdatedAt = new Date().toISOString();
-
-showNotification('Статус заказа обновлен', 'success');
-loadAdminOrders(); // Перезагружаем таблицу
-}
-
-function renderDriverStatusDropdown(driverUserId, currentStatus) {
-return `
-    <div style="display: flex; flex-direction: column; gap: 5px;">
-        <select class="status-dropdown" onchange="changeDriverStatus(${driverUserId}, this.value)"
-                style="padding: 4px 8px; border-radius: 4px; border: 1px solid #ddd; font-size: 12px;
-                    background-color: ${currentStatus === 'active' ? '#d4edda' : '#f8d7da'};">
-            <option value="active" ${currentStatus === 'active' ? 'selected' : ''}>Активен</option>
-            <option value="inactive" ${currentStatus === 'inactive' ? 'selected' : ''}>Неактивен</option>
-            <option value="pending" ${currentStatus === 'pending' ? 'selected' : ''}>На проверке</option>
-        </select>
-
-        ${currentStatus === 'active' ?
-            `<button class="track-btn" style="padding: 3px 8px; font-size: 11px;"
-                    onclick="dismissDriver(${driverUserId})">Уволить</button>` :
-            `<button class="recovery-btn" style="padding: 3px 8px; font-size: 11px; background: #28a745;"
-                    onclick="restoreDriver(${driverUserId})">Восстановить</button>`
-        }
-    </div>
-`;
-}
-
+// Функция видимости заказов со стороны пользователя
 async function loadUserOrders() {
 if (!currentUser) return;
 
@@ -3619,20 +2293,6 @@ if (currentUser && currentUser.isAdmin) {
     loadDriverApplications();
     loadDriversList();
 }
-
-// Скрываем неиспользуемые вкладки/блоки статистики и увольнений
-const adminStats = document.getElementById('profile-admin-stats');
-const driverStats = document.getElementById('profile-driver-stats');
-const resignationHistory = document.getElementById('profile-resignation-history');
-if (adminStats) adminStats.style.display = 'none';
-if (driverStats) driverStats.style.display = 'none';
-if (resignationHistory) resignationHistory.style.display = 'none';
-
-// Дополнительно скрываем возможные блоки статистики пользователей/водителей
-const extraStatsSelectors = ['#profile-stats', '.profile-stats-section', '.user-stats-block'];
-extraStatsSelectors.forEach(sel => {
-    document.querySelectorAll(sel).forEach(el => el.style.display = 'none');
-});
 })
 
 // Функция для автоматического заполнения формы заказа данными пользователя

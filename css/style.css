@@ -871,8 +871,6 @@ footer p {
 .error-message.show {
     display: block;
 }
-
-/* ОБЩИЙ отступ для строки с чекбоксом и ссылкой - УМЕНЬШЕН для авторизации */
 .auth-options-row {
     display: flex;
     justify-content: space-between;
@@ -881,7 +879,6 @@ footer p {
     flex-wrap: wrap;
 }
 
-/* Увеличиваем отступ для формы регистрации */
 #registerModal .auth-options-row {
     margin: 25px 0;
 }
@@ -950,7 +947,6 @@ footer p {
     text-decoration: underline;
 }
 
-/* Убираем большой отступ снизу у чекбокса в авторизации */
 #loginModal .auth-checkbox-container {
     margin-bottom: 10px;
 }
@@ -969,7 +965,6 @@ footer p {
     margin-top: 10px;
 }
 
-/* Кнопка входа с меньшим отступом сверху */
 #loginModal .auth-btn {
     margin-top: 5px;
 }
@@ -1793,7 +1788,7 @@ grid-template-columns: 80px 150px 150px 200px 170px 120px 150px;
 #dismissal-history-list .order-row {
     display: grid;
     width: max-content;
-    min-width: 900px; /* Минимальная ширина для предотвращения сжатия */
+    min-width: 900px; 
 }
 
 /* Конкретные сетки для каждой таблицы */
